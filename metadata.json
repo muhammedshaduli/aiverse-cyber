@@ -1,0 +1,6 @@
+{
+  "name": "AiVerse by Shaduli",
+  "description": "Premium AI Trust, Digital Authenticity, Deepfake Detection, Cybersecurity, and AI Governance platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
