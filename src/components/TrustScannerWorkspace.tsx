@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "../context/LanguageContext";
+import { useFirebase } from "../context/FirebaseContext";
 import ReportExportPanel from "./ReportExportPanel";
 
 interface ScanSample {
@@ -1305,6 +1306,7 @@ const PRESET_SAMPLES: ScanSample[] = [
 
 export default function TrustScannerWorkspace({ onClose }: { onClose: () => void }) {
   const { language, t } = useLanguage();
+  const { triggerNewScan, updateScanMeta } = useFirebase();
   const [selectedPreset, setSelectedPreset] = useState<ScanSample>(PRESET_SAMPLES[0]);
   const [fileType, setFileType] = useState<"image" | "voice" | "video" | "email">("image");
   const [textInput, setTextInput] = useState(PRESET_SAMPLES[0].input);
@@ -1460,6 +1462,27 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
     setProgress(0);
     setTerminalLogs([]);
 
+    const scanId = `scan-${Math.floor(Date.now() % 1000000)}`;
+
+    // Invoke firestore audit telemetry record creation
+    triggerNewScan({
+      scanId,
+      scanType: fileType,
+      fileName: selectedPreset.fileName,
+      fileSize: selectedPreset.fileSize,
+      scanStatus: "processing",
+      scanProgress: 0,
+      resultSummary: "Queued for deep-neural frequency vector analysis.",
+      sourceModel: selectedPreset.expectedOutput.sourceModel,
+      aiConfidence: selectedPreset.expectedOutput.score,
+      riskScore: 100 - selectedPreset.expectedOutput.score,
+      anomalies: selectedPreset.expectedOutput.anomalies,
+      logs: selectedPreset.expectedOutput.logs,
+      integrityRating: selectedPreset.expectedOutput.integrityRating,
+      creatorIp: selectedPreset.expectedOutput.creatorIp,
+      creatorDevice: selectedPreset.expectedOutput.creatorDevice
+    });
+
     const totalLogs = selectedPreset.expectedOutput.logs;
     let logIndex = 0;
 
@@ -1480,10 +1503,20 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
 
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
-        if (prev >= 45 && prev < 50) {
+        const nextProgress = prev + 2;
+
+        if (nextProgress >= 45 && nextProgress < 50) {
           setScanStep("calculating");
         }
-        if (prev >= 100) {
+
+        // Periodically sync progress metric to firestore backend database
+        if (nextProgress % 20 === 0 && nextProgress < 100) {
+          updateScanMeta(scanId, nextProgress, "processing", {
+            resultSummary: `Analyzing high frequency artifacts... ${nextProgress}% complete.`
+          });
+        }
+
+        if (nextProgress >= 100) {
           clearInterval(progressInterval);
           setScanStep("success");
           setIsScanning(false);
@@ -1493,9 +1526,16 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
             `[${new Date().toLocaleTimeString()}] [SUCCESS] Diagnostic suite finalized successfully.`,
             `[${new Date().toLocaleTimeString()}] [LEDGER] Forensic Certificate Generated. Signed SHA256: 48f9ac12...`
           ]);
+
+          // Seal finalized scan metadata into decentralized tenant collections
+          updateScanMeta(scanId, 100, "completed", {
+            completedAt: new Date().toISOString(),
+            resultSummary: selectedPreset.expectedOutput.status
+          });
+
           return 100;
         }
-        return prev + 2;
+        return nextProgress;
       });
     }, speed);
   };

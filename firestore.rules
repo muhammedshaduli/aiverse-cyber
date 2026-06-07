@@ -1,0 +1,260 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. GLOBAL PRIVACY SAFETY NET
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. CRYPTOGRAPHIC & PATH TRANSFORMATION PRIMITIVES
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && (request.auth.token.email_verified == true);
+    }
+
+    function isValidId(id) {
+       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Safely reads the user record to determine tenancy and role. 
+    function getProfile(userId) {
+      return get(/databases/$(database)/documents/users/$(userId)).data;
+    }
+
+    function isTenantMember(orgId) {
+      return isSignedIn() && (getProfile(request.auth.uid).organizationId == orgId);
+    }
+
+    function hasTenantRole(orgId, allowedRoles) {
+      return isTenantMember(orgId) && (getProfile(request.auth.uid).role in allowedRoles);
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (getProfile(request.auth.uid).role == "Super Admin");
+    }
+
+    // 3. SCHEMA INTEGRITY BLUEPRINTS (isValid Helpers)
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() <= 128 &&
+             data.email is string && data.email.size() <= 256 &&
+             data.name is string && data.name.size() <= 128 &&
+             data.role in ["Super Admin", "Organization Admin", "Security Manager", "Analyst", "Viewer", "Guest"] &&
+             data.organizationId is string && data.organizationId.size() <= 128 &&
+             data.tenantType in ["Individual", "Enterprise", "Government", "Partner", "Developer"] &&
+             data.status in ["active", "suspended", "pending"] &&
+             (data.createdAt == request.time || data.createdAt is string);
+    }
+
+    function isValidScan(data) {
+      return data.scanId is string && data.scanId.size() <= 128 &&
+             data.scanType in ["image", "video", "voice", "email"] &&
+             data.fileName is string && data.fileName.size() <= 256 &&
+             data.scanStatus in ["queued", "processing", "completed", "failed"] &&
+             (data.scanProgress is int || data.scanProgress is float) && data.scanProgress >= 0 && data.scanProgress <= 100 &&
+             data.createdBy is string && data.createdBy.size() <= 128 &&
+             (data.createdAt == request.time || data.createdAt is string);
+    }
+
+    function isValidAlert(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.type in ["image", "video", "voice", "social", "attack"] &&
+             data.title is string && data.title.size() <= 256 &&
+             data.severity in ["High", "Critical", "Medium"] &&
+             data.resolved is boolean &&
+             (data.createdAt == request.time || data.createdAt is string);
+    }
+
+    function isValidReport(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.title is string && data.title.size() <= 256 &&
+             data.classification is string && data.classification.size() <= 128 &&
+             (data.overallRiskScore is int || data.overallRiskScore is float) && data.overallRiskScore >= 0 && data.overallRiskScore <= 100 &&
+             data.sealedHash is string && data.sealedHash.size() <= 128 &&
+             (data.createdAt == request.time || data.createdAt is string);
+    }
+
+    function isValidWorkflow(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.name is string && data.name.size() <= 256 &&
+             data.trigger is string && data.trigger.size() <= 128 &&
+             data.active is boolean &&
+             (data.createdAt == request.time || data.createdAt is string);
+    }
+
+    function isValidAiAgent(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.agentName is string && data.agentName.size() <= 128 &&
+             data.status is string && data.status.size() <= 128;
+    }
+
+    function isValidAuditLog(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.userId is string && data.userId.size() <= 128 &&
+             data.action is string && data.action.size() <= 256 &&
+             (data.timestamp == request.time || data.timestamp is string);
+    }
+
+    function isValidMonitoring(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.platform is string && data.platform.size() <= 128 &&
+             data.threatLevel in ["Low", "Medium", "High", "Critical"] &&
+             (data.riskScore is int || data.riskScore is float) && data.riskScore >= 0 && data.riskScore <= 100 &&
+             (data.timestamp == request.time || data.timestamp is string);
+    }
+
+    function isValidBilling(data) {
+      return data.id is string && data.id.size() <= 128 &&
+             data.billingStatus is string && data.billingStatus.size() <= 128 &&
+             data.subscriptionTier is string && data.subscriptionTier.size() <= 128 &&
+             (data.amountUSD is int || data.amountUSD is float) && data.amountUSD >= 0;
+    }
+
+
+    // 4. USERS COLLECTION RULES
+    match /users/{userId} {
+      allow get: if isSignedIn() && (
+        request.auth.uid == userId || 
+        isSuperAdmin() || 
+        (getProfile(request.auth.uid).organizationId == resource.data.organizationId && 
+         getProfile(request.auth.uid).role in ["Super Admin", "Organization Admin", "Security Manager"])
+      );
+
+      allow list: if isSignedIn() && (
+        isSuperAdmin() || 
+        resource.data.organizationId == getProfile(request.auth.uid).organizationId
+      );
+
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+
+      allow update: if isSignedIn() && (request.auth.uid == userId || isSuperAdmin()) &&
+                    isValidUser(incoming()) &&
+                    incoming().role == existing().role &&
+                    incoming().organizationId == existing().organizationId &&
+                    incoming().uid == existing().uid;
+    }
+
+
+    // 5. ORGANIZATIONS COLLECTION RULES
+    match /organizations/{orgId} {
+      allow get: if isSignedIn() && (isTenantMember(orgId) || isSuperAdmin());
+      allow list: if isSignedIn() && isSuperAdmin();
+
+      allow create: if isSignedIn() && isSuperAdmin();
+      allow update: if isSignedIn() && (isSuperAdmin() || hasTenantRole(orgId, ["Organization Admin"]));
+      allow delete: if isSignedIn() && isSuperAdmin();
+
+      // --- TENANT NESTED SUB-COLLECTIONS ---
+
+      // SCANS COLLECTION
+      match /scans/{scanId} {
+        allow get: if isSignedIn() && isValidId(scanId) && (isTenantMember(orgId) || isSuperAdmin());
+        allow list: if isSignedIn() && (isTenantMember(orgId) || isSuperAdmin()) && resource.data.createdBy == request.auth.uid;
+        
+        allow create: if isSignedIn() && isValidId(scanId) && isTenantMember(orgId) && 
+                      isValidScan(incoming()) && incoming().createdBy == request.auth.uid;
+
+        allow update: if isSignedIn() && isValidId(scanId) && isTenantMember(orgId) &&
+                      isValidScan(incoming()) && (
+                        isSuperAdmin() || 
+                        hasTenantRole(orgId, ["Organization Admin", "Security Manager", "Analyst"]) ||
+                        (incoming().createdBy == request.auth.uid && 
+                         incoming().diff(existing()).affectedKeys().hasOnly(['scanStatus', 'scanProgress', 'resultSummary', 'aiConfidence', 'riskScore', 'logs', 'anomalies']))
+                      );
+      }
+
+      // ALERTS COLLECTION
+      match /alerts/{alertId} {
+        allow get: if isSignedIn() && isValidId(alertId) && (isTenantMember(orgId) || isSuperAdmin());
+        allow list: if isSignedIn() && (isTenantMember(orgId) || isSuperAdmin());
+        
+        allow create: if isSignedIn() && isValidId(alertId) && hasTenantRole(orgId, ["Organization Admin", "Security Manager", "Analyst"]) &&
+                      isValidAlert(incoming());
+
+        allow update: if isSignedIn() && isValidId(alertId) && isTenantMember(orgId) &&
+                      isValidAlert(incoming()) && (
+                        isSuperAdmin() ||
+                        hasTenantRole(orgId, ["Organization Admin", "Security Manager"]) ||
+                        incoming().diff(existing()).affectedKeys().hasOnly(['resolved'])
+                      );
+      }
+
+      // REPORTS COLLECTION
+      match /reports/{reportId} {
+        allow get: if isSignedIn() && isValidId(reportId) && (isTenantMember(orgId) || isSuperAdmin());
+        allow list: if isSignedIn() && (isTenantMember(orgId) || isSuperAdmin());
+
+        allow create: if isSignedIn() && isValidId(reportId) && hasTenantRole(orgId, ["Organization Admin", "Security Manager"]) &&
+                      isValidReport(incoming());
+
+        allow update: if isSignedIn() && isValidId(reportId) && hasTenantRole(orgId, ["Organization Admin", "Security Manager"]) &&
+                      isValidReport(incoming());
+      }
+
+      // WORKFLOWS COLLECTION
+      match /workflows/{workflowId} {
+        allow get: if isSignedIn() && isValidId(workflowId) && (isTenantMember(orgId) || isSuperAdmin());
+        allow list: if isSignedIn() && (isTenantMember(orgId) || isSuperAdmin());
+
+        allow create: if isSignedIn() && isValidId(workflowId) && hasTenantRole(orgId, ["Organization Admin", "Security Manager"]) &&
+                      isValidWorkflow(incoming());
+
+        allow update: if isSignedIn() && isValidId(workflowId) && hasTenantRole(orgId, ["Organization Admin", "Security Manager"]) &&
+                      isValidWorkflow(incoming());
+      }
+
+      // AI AGENTS COLLECTION
+      match /aiAgents/{agentId} {
+        allow get: if isSignedIn() && isValidId(agentId) && (isTenantMember(orgId) || isSuperAdmin());
+        allow list: if isSignedIn() && (isTenantMember(orgId) || isSuperAdmin());
+
+        allow create: if isSignedIn() && isValidId(agentId) && hasTenantRole(orgId, ["Organization Admin", "Security Manager"]) &&
+                      isValidAiAgent(incoming());
+
+        allow update: if isSignedIn() && isValidId(agentId) && isTenantMember(orgId) &&
+                      isValidAiAgent(incoming());
+      }
+
+      // AUDIT LOGS COLLECTION (Immutable logging, no update/delete allowed)
+      match /auditLogs/{auditId} {
+        allow get: if isSignedIn() && isValidId(auditId) && (isTenantMember(orgId) || isSuperAdmin());
+        allow list: if isSignedIn() && (isTenantMember(orgId) || isSuperAdmin());
+
+        allow create: if isSignedIn() && isValidId(auditId) && isTenantMember(orgId) &&
+                      isValidAuditLog(incoming()) && incoming().userId == request.auth.uid;
+      }
+
+      // MONITORING COLLECTION
+      match /monitoring/{monitorId} {
+        allow get: if isSignedIn() && isValidId(monitorId) && (isTenantMember(orgId) || isSuperAdmin());
+        allow list: if isSignedIn() && (isTenantMember(orgId) || isSuperAdmin());
+
+        allow create: if isSignedIn() && isValidId(monitorId) && hasTenantRole(orgId, ["Organization Admin", "Security Manager"]) &&
+                      isValidMonitoring(incoming());
+
+        allow update: if isSignedIn() && isValidId(monitorId) && hasTenantRole(orgId, ["Organization Admin", "Security Manager"]) &&
+                      isValidMonitoring(incoming());
+      }
+
+      // BILLING COLLECTION
+      match /billing/{invoiceId} {
+        allow get: if isSignedIn() && isValidId(invoiceId) && (isTenantMember(orgId) || isSuperAdmin());
+        allow list: if isSignedIn() && (isTenantMember(orgId) || isSuperAdmin());
+
+        allow create: if isSignedIn() && isSuperAdmin();
+        allow update: if isSignedIn() && isSuperAdmin();
+      }
+    }
+  }
+}

@@ -1,0 +1,238 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and enterprise roll assignment",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth unique ID matching request.auth.uid" },
+        "email": { "type": "string", "description": "Verified email address" },
+        "name": { "type": "string", "description": "Full name display string" },
+        "avatar": { "type": "string", "description": "Avatar placeholder or image URL" },
+        "role": { "type": "string", "enum": ["Super Admin", "Organization Admin", "Security Manager", "Analyst", "Viewer", "Guest"] },
+        "organizationId": { "type": "string", "description": "The workspace/tenant group this user belongs to" },
+        "tenantType": { "type": "string", "enum": ["Individual", "Enterprise", "Government", "Partner", "Developer"] },
+        "lastLogin": { "type": "string", "format": "date-time" },
+        "emailVerified": { "type": "boolean" },
+        "mfaEnabled": { "type": "boolean" },
+        "subscriptionPlan": { "type": "string" },
+        "riskScore": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["active", "suspended", "pending"] }
+      },
+      "required": ["uid", "email", "name", "role", "organizationId", "tenantType", "createdAt"]
+    },
+    "Organization": {
+      "title": "Organization / Tenant Group",
+      "description": "Multi-tenant workspace configuration group",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "organizationName": { "type": "string" },
+        "organizationType": { "type": "string", "enum": ["Individual", "Enterprise", "Government", "Partner", "Developer"] },
+        "industry": { "type": "string" },
+        "complianceRequirements": { "type": "array" },
+        "seatLimit": { "type": "number" },
+        "activeSeats": { "type": "number" },
+        "subscriptionTier": { "type": "string" },
+        "securityLevel": { "type": "string" },
+        "dataResidency": { "type": "string" },
+        "billingStatus": { "type": "string" },
+        "riskScore": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "organizationName", "organizationType", "subscriptionTier", "createdAt"]
+    },
+    "Scan": {
+      "title": "Forensic Scan Record",
+      "description": "Cryptographic deepfake detect, voice cloned verify and attack threat scanning",
+      "type": "object",
+      "properties": {
+        "scanId": { "type": "string" },
+        "scanType": { "type": "string", "enum": ["image", "video", "voice", "email"] },
+        "fileName": { "type": "string" },
+        "fileSize": { "type": "string" },
+        "fileReference": { "type": "string" },
+        "scanStatus": { "type": "string", "enum": ["queued", "processing", "completed", "failed"] },
+        "scanProgress": { "type": "number" },
+        "resultSummary": { "type": "string" },
+        "aiConfidence": { "type": "number" },
+        "riskScore": { "type": "number" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "completedAt": { "type": "string", "format": "date-time" },
+        "anomalies": { "type": "array" },
+        "logs": { "type": "array" },
+        "sourceModel": { "type": "string" },
+        "integrityRating": { "type": "string" },
+        "geoCoordinates": { "type": "string" },
+        "networkProvider": { "type": "string" },
+        "creatorIp": { "type": "string" },
+        "creatorDevice": { "type": "string" }
+      },
+      "required": ["scanId", "scanType", "fileName", "scanStatus", "scanProgress", "createdBy", "createdAt"]
+    },
+    "Alert": {
+      "title": "Threat Alert Notification",
+      "description": "Real-time threat feeds, leak warnings, deepfake intercepts, and compliance alerts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["image", "video", "voice", "social", "attack"] },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "description": { "type": "string" },
+        "severity": { "type": "string", "enum": ["High", "Critical", "Medium"] },
+        "imageUrl": { "type": "string" },
+        "manipulatedUrl": { "type": "string" },
+        "vectorDetails": { "type": "string" },
+        "resolved": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "type", "title", "severity", "resolved", "createdAt"]
+    },
+    "Report": {
+      "title": "CTO Compliance & Governance Report",
+      "description": "Auditable, cryptographically sealed deepfake forensics and executive reports",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "classification": { "type": "string" },
+        "scansCount": { "type": "number" },
+        "threatsDetected": { "type": "number" },
+        "overallRiskScore": { "type": "number" },
+        "complianceStandards": { "type": "array" },
+        "sealedHash": { "type": "string" },
+        "signer": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "downloadUrl": { "type": "string" }
+      },
+      "required": ["id", "title", "classification", "overallRiskScore", "sealedHash", "createdAt"]
+    },
+    "Workflow": {
+      "title": "Automation Scan Workflow",
+      "description": "User-configured automations mapping triggers to defensive security responses",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "active": { "type": "boolean" },
+        "trigger": { "type": "string" },
+        "actions": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "trigger", "active", "createdAt"]
+    },
+    "AiAgent": {
+      "title": "AiVerse ONE Autonomous Agent",
+      "description": "Agent configurations, historical prompts, actions logs, and smart routing tracks",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "agentName": { "type": "string" },
+        "status": { "type": "string" },
+        "capabilities": { "type": "array" },
+        "recentPrompts": { "type": "array" },
+        "actionsExecuted": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "agentName", "status", "updatedAt"]
+    },
+    "AuditLog": {
+      "title": "Immutable Threat Audit Trail",
+      "description": "High-fidelity chronological logs capturing multi-tenant database operations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "action": { "type": "string" },
+        "resource": { "type": "string" },
+        "ipAddress": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "action", "timestamp"]
+    },
+    "Monitoring": {
+      "title": "Brand Impersonation & Social Monitor Profile",
+      "description": "Configuration matching brand terms, handle watchlists, and social tracking feeds",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "platform": { "type": "string" },
+        "threatLevel": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+        "source": { "type": "string" },
+        "reach": { "type": "string" },
+        "riskScore": { "type": "number" },
+        "actionRequired": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "platform", "threatLevel", "riskScore", "timestamp"]
+    },
+    "Billing": {
+      "title": "Invoice and Billing Status",
+      "description": "Tenant invoice details, stripe checkout parameters and subscriptions configuration logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "billingStatus": { "type": "string" },
+        "subscriptionTier": { "type": "string" },
+        "periodStart": { "type": "string", "format": "date-time" },
+        "periodEnd": { "type": "string", "format": "date-time" },
+        "usageAmount": { "type": "number" },
+        "invoiceUrl": { "type": "string" },
+        "amountUSD": { "type": "number" }
+      },
+      "required": ["id", "billingStatus", "subscriptionTier", "amountUSD"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "Global user account registry"
+    },
+    "/organizations/{orgId}": {
+      "schema": { "$ref": "Organization" },
+      "description": "Multi-tenant master organization workspace data"
+    },
+    "/organizations/{orgId}/scans/{scanId}": {
+      "schema": { "$ref": "Scan" },
+      "description": "Forensic data verification and threat detection scanning logs of a tenant workspace"
+    },
+    "/organizations/{orgId}/alerts/{alertId}": {
+      "schema": { "$ref": "Alert" },
+      "description": "Real-time threat intercept reports and alerts belonging to a tenant workspace"
+    },
+    "/organizations/{orgId}/reports/{reportId}": {
+      "schema": { "$ref": "Report" },
+      "description": "Cryptographically sealed compliance reports generated by security managers"
+    },
+    "/organizations/{orgId}/workflows/{workflowId}": {
+      "schema": { "$ref": "Workflow" },
+      "description": "Automated defensive response triggers of the enterprise workspace"
+    },
+    "/organizations/{orgId}/aiAgents/{agentId}": {
+      "schema": { "$ref": "AiAgent" },
+      "description": "AiVerse ONE agent settings and system action logs within a tenant"
+    },
+    "/organizations/{orgId}/auditLogs/{auditId}": {
+      "schema": { "$ref": "AuditLog" },
+      "description": "Chronological, secure event logging details of an organization"
+    },
+    "/organizations/{orgId}/monitoring/{monitorId}": {
+      "schema": { "$ref": "Monitoring" },
+      "description": "Brand protection, dark web listings and social monitoring channels configuration"
+    },
+    "/organizations/{orgId}/billing/{invoiceId}": {
+      "schema": { "$ref": "Billing" },
+      "description": "Billing, checkouts, and stripe invoice logs of the tenant"
+    }
+  }
+}

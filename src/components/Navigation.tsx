@@ -2,13 +2,22 @@ import { useState, useEffect, useRef } from "react";
 import { 
   ShieldCheck, ArrowRight, X, Upload, FileSignature, 
   Cpu, FileSearch, MessageSquareWarning, RefreshCw, BadgePercent, CheckCircle, HelpCircle, HardDrive,
-  Globe, ChevronDown
+  Globe, ChevronDown, LogOut, User, Fingerprint, Lock, ShieldAlert
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage, LANGUAGES, LanguageCode } from "../context/LanguageContext";
+import { useFirebase } from "../context/FirebaseContext";
 
 export default function Navigation() {
   const { language, setLanguage, t } = useLanguage();
+  const { 
+    currentUser, 
+    userProfile, 
+    tenantOrg, 
+    triggerGoogleLogin, 
+    triggerLogout 
+  } = useFirebase();
+
   const [isOpenScanModal, setIsOpenScanModal] = useState(false);
   const [scanState, setScanState] = useState<"idle" | "indexing" | "finishing" | "success">("idle");
   const [fileType, setFileType] = useState<"image" | "voice" | "video" | "email">("image");
@@ -17,13 +26,19 @@ export default function Navigation() {
   
   // Local active language state
   const [isLangOpen, setIsLangOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  
   const langDropdownRef = useRef<HTMLDivElement>(null);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
         setIsLangOpen(false);
+      }
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -84,7 +99,7 @@ export default function Navigation() {
             <a href="#modules" className="hover:text-slate-900 transition-colors">{t.nav.modules}</a>
             <a href="#demo" className="hover:text-slate-900 transition-colors">{t.nav.playground}</a>
             <a href="#ecosystem" className="hover:text-slate-900 transition-colors">{t.nav.ecosystem}</a>
-            <a href="#metrics" className="hover:text-slate-900 transition-colors font-bold text-blue-600 flex items-center gap-1">
+            <a href="#metrics" className="hover:text-slate-900 transition-colors font-bold text-blue-600 flex items-center gap-1 font-mono uppercase text-[10px]">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-ping" />
               {t.nav.ledger}
             </a>
@@ -97,19 +112,31 @@ export default function Navigation() {
               <Cpu className="w-3.5 h-3.5" />
               Admin Portal
             </button>
+            <button 
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("openSovereignPortal"));
+              }}
+              className="hover:text-blue-650 font-bold text-blue-650 flex items-center gap-1.5 cursor-pointer bg-transparent border-none p-0 text-xs"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+              </span>
+              Cyber & Privacy Portal
+            </button>
           </nav>
 
           {/* Nav Right CTAs with Dropdown Language Switcher */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {/* Language Toggle Selector */}
             <div className="relative" ref={langDropdownRef}>
               <button 
                 onClick={() => setIsLangOpen(!isLangOpen)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-full border border-slate-205 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-all font-mono pointer-events-auto cursor-pointer shadow-sm"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-slate-200 bg-white text-[11px] font-bold text-slate-700 hover:bg-slate-50 transition-all font-mono pointer-events-auto cursor-pointer shadow-sm"
               >
                 <span className="text-xs">{activeLang.flag}</span>
-                <span className="uppercase text-[11px] font-bold text-slate-800">{activeLang.code}</span>
-                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`} />
+                <span className="uppercase text-[10px] font-bold text-slate-850">{activeLang.code}</span>
+                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-250 ${isLangOpen ? "rotate-180" : ""}`} />
               </button>
               
               <AnimatePresence>
@@ -146,14 +173,114 @@ export default function Navigation() {
               </AnimatePresence>
             </div>
 
-            <button 
-              onClick={() => {
-                window.dispatchEvent(new CustomEvent("openAdminConsole"));
-              }}
-              className="text-xs font-bold text-indigo-650 hover:text-indigo-800 border border-indigo-200 px-4 py-2 rounded-full bg-indigo-50/30 hover:bg-indigo-55 transition-all font-mono shadow-sm cursor-pointer"
-            >
-              Admin
-            </button>
+            {/* FIREBASE AUTHENTICATION TRIGGER CONTROL BAR */}
+            <div className="relative" ref={profileDropdownRef}>
+              {currentUser && userProfile ? (
+                <>
+                  <button 
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center gap-2 border border-slate-200 bg-white hover:bg-slate-50 p-1 pr-3 rounded-full shadow-sm transition cursor-pointer select-none"
+                  >
+                    <img 
+                      src={userProfile.avatar} 
+                      alt={userProfile.name} 
+                      referrerPolicy="no-referrer"
+                      className="w-6 h-6 rounded-full object-cover border border-blue-105" 
+                    />
+                    <div className="text-left leading-none font-mono">
+                      <span className="text-[10px] font-extrabold text-slate-800 block">{userProfile.name.split(' ')[0]}</span>
+                      <span className="text-[8px] text-blue-600 font-black uppercase tracking-wider block">{userProfile.role.replace('Organization ', '')}</span>
+                    </div>
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-250 ${isProfileOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {isProfileOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl py-3.5 z-50 text-xs text-slate-700"
+                      >
+                        {/* Tenant Master Branding Card */}
+                        <div className="px-4 pb-3 border-b border-slate-100 flex items-start gap-2.5">
+                          <img 
+                            src={userProfile.avatar} 
+                            alt={userProfile.name} 
+                            referrerPolicy="no-referrer"
+                            className="w-10 h-10 rounded-xl object-cover border border-slate-200 shadow-sm" 
+                          />
+                          <div className="space-y-0.5">
+                            <h5 className="font-bold text-slate-900 leading-tight block">{userProfile.name}</h5>
+                            <span className="text-[10px] font-mono text-slate-450 block">{userProfile.email}</span>
+                          </div>
+                        </div>
+
+                        {/* Tenancy specifications segment */}
+                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-100 space-y-1.5 font-mono text-[10px] text-slate-500">
+                          <div className="flex justify-between">
+                            <span>Sovereign Tenant:</span>
+                            <strong className="text-slate-800 font-bold truncate max-w-[120px]">{tenantOrg?.organizationName || "AiVerse Command"}</strong>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Sub Level:</span>
+                            <strong className="text-indigo-600 font-black">{tenantOrg?.subscriptionTier || "Sovereign Tier"}</strong>
+                          </div>
+                          <div className="flex justify-between p-1 bg-emerald-50 text-emerald-700 rounded select-none uppercase font-black tracking-widest text-[8px] text-center justify-center">
+                            <Lock className="w-3 h-3 mr-1" /> SECURE HANDSHAKE LIVE
+                          </div>
+                        </div>
+
+                        {/* Actions mapping links */}
+                        <div className="p-1 px-2 space-y-0.5">
+                          <button
+                            onClick={() => {
+                              setIsProfileOpen(false);
+                              window.dispatchEvent(new CustomEvent("openAdminConsole"));
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg flex items-center gap-2.5 font-semibold text-slate-655"
+                          >
+                            <Cpu className="w-4 h-4 text-slate-455" />
+                            <span>Security Dashboard</span>
+                          </button>
+                          
+                          <button
+                            onClick={() => {
+                              setIsProfileOpen(false);
+                              window.dispatchEvent(new CustomEvent("openSovereignPortal"));
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg flex items-center gap-2.5 font-semibold text-slate-655"
+                          >
+                            <Fingerprint className="w-4 h-4 text-slate-455" />
+                            <span>Privacy Configs</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setIsProfileOpen(false);
+                              triggerLogout();
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-rose-50 text-rose-600 rounded-lg flex items-center gap-2.5 font-bold mt-1"
+                          >
+                            <LogOut className="w-4 h-4 text-rose-500" />
+                            <span>Sign Out Console</span>
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              ) : (
+                <button 
+                  onClick={triggerGoogleLogin}
+                  className="text-xs font-bold font-mono px-3.5 py-2 border border-blue-250 bg-blue-50/40 hover:bg-blue-100 text-blue-700 rounded-full flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+                >
+                  <User className="w-3.5 h-3.5 text-blue-600 animate-pulse" />
+                  <span>Google Sign-In</span>
+                </button>
+              )}
+            </div>
 
             <button 
               onClick={() => {
@@ -167,7 +294,7 @@ export default function Navigation() {
               onClick={() => {
                 window.dispatchEvent(new CustomEvent("openScanWorkspace"));
               }}
-              className="text-xs font-semibold px-4.5 py-2.5 bg-slate-950 hover:bg-blue-605 text-white rounded-full transition-all flex items-center gap-1.5 shadow-md shadow-blue-50/50 tracking-tight cursor-pointer"
+              className="text-xs font-semibold px-4.5 py-2.5 bg-slate-950 hover:bg-blue-605 text-white rounded-full transition-all flex items-center gap-1.5 shadow-md shadow-blue-50/50 tracking-tight cursor-pointer animate-none"
             >
               <span>{t.nav.launch}</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -323,7 +450,7 @@ export default function Navigation() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-slate-650 py-1 font-mono">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-slate-655 py-1 font-mono">
                       <div>
                         <span className="text-[9px] text-slate-450 block font-bold">{t.scanModal.authScore}</span>
                         <strong className="text-rose-600 text-lg font-bold">{scanOutput.idx}% {t.scanModal.lowScore}</strong>
@@ -373,4 +500,5 @@ export default function Navigation() {
     </>
   );
 }
+
 

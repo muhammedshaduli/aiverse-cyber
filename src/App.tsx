@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { 
   ShieldAlert, ShieldCheck, Play, ArrowRight, Activity, 
-  Cpu, FileCheck, Landmark, GitCommit, ChevronRight, AlertOctagon 
+  Cpu, FileCheck, Landmark, GitCommit, ChevronRight, AlertOctagon,
+  Fingerprint, Database, Lock
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useLanguage } from "./context/LanguageContext";
@@ -20,6 +21,7 @@ import TrustScannerWorkspace from "./components/TrustScannerWorkspace";
 import AdminDashboard from "./components/AdminDashboard";
 import Hero from "./components/ui/animated-shader-hero";
 import TrustComplianceCenter from "./components/TrustComplianceCenter";
+import CyberPrivacyPortal from "./components/CyberPrivacyPortal";
 
 export default function App() {
   const { t } = useLanguage();
@@ -28,25 +30,36 @@ export default function App() {
   const [clientCount, setClientCount] = useState(105);
   const [showScannerPage, setShowScannerPage] = useState(false);
   const [showAdminPage, setShowAdminPage] = useState(false);
+  const [showSovereignPortal, setShowSovereignPortal] = useState(false);
 
   // Custom listener for global scanner page open requests
   useEffect(() => {
     const handleOpenScanner = () => {
       setShowScannerPage(true);
       setShowAdminPage(false);
+      setShowSovereignPortal(false);
       // Ensure page scrolls to top nicely
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
     const handleOpenAdmin = () => {
       setShowAdminPage(true);
       setShowScannerPage(false);
+      setShowSovereignPortal(false);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    const handleOpenSovereign = () => {
+      setShowSovereignPortal(true);
+      setShowAdminPage(false);
+      setShowScannerPage(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
     window.addEventListener("openScanWorkspace", handleOpenScanner);
     window.addEventListener("openAdminConsole", handleOpenAdmin);
+    window.addEventListener("openSovereignPortal", handleOpenSovereign);
     return () => {
       window.removeEventListener("openScanWorkspace", handleOpenScanner);
       window.removeEventListener("openAdminConsole", handleOpenAdmin);
+      window.removeEventListener("openSovereignPortal", handleOpenSovereign);
     };
   }, []);
 
@@ -62,6 +75,10 @@ export default function App() {
 
   if (showAdminPage) {
     return <AdminDashboard onClose={() => setShowAdminPage(false)} />;
+  }
+
+  if (showSovereignPortal) {
+    return <CyberPrivacyPortal onClose={() => setShowSovereignPortal(false)} />;
   }
 
   if (showScannerPage) {
@@ -275,6 +292,213 @@ export default function App() {
         </div>
 
         <PlatformModules />
+      </section>
+
+      {/* SECTION 4.2: SOVEREIGN CYBERSECURITY & PRIVACY PORTAL DISPLAY WITH LIVE SCREENSHOT MOCKUP */}
+      <section id="cyber-privacy-showcase" className="py-24 px-6 md:px-8 max-w-7xl mx-auto w-full bg-slate-50 border border-slate-200 rounded-[40px] scroll-mt-20 overflow-hidden relative">
+        
+        {/* Soft background glow circles */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-blue-100/30 to-indigo-100/20 blur-[120px] pointer-events-none -z-10" />
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          {/* Left Text and Pillars Block (col-span-5) */}
+          <div className="lg:col-span-5 space-y-6 text-left">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-105 border border-blue-200 text-blue-700 text-[10px] font-mono font-bold uppercase select-none">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Sovereign Local Hardware Deployment</span>
+            </div>
+
+            <h2 className="text-3xl md:text-4.2xl font-display font-bold text-slate-900 tracking-tight leading-none">
+              The Sovereign Trust, Cyber & Privacy Operating System
+            </h2>
+
+            <p className="text-slate-600 text-sm leading-relaxed font-medium">
+              Deploy AiVerse directly onto your company premises, private cloud infrastructure, or internal personal workspace. Keep 100% of sensitive employee files, biometric tracks, credentials, and LLM prompt tokens in absolute air-gapped confinement.
+            </p>
+
+            <div className="space-y-4 pt-2">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-white rounded-lg border border-slate-200 text-blue-600 flex-shrink-0 shadow-sm">
+                  <Fingerprint className="w-4 h-4 text-blue-600" />
+                </div>
+                <div>
+                  <strong className="text-xs text-slate-900 font-bold block">1. AiVerse Identity Shielding</strong>
+                  <p className="text-[11px] text-slate-500 leading-normal">
+                    Audit leaking passwords, active dark web forum raids, and social media deepfakes targeting executive profiles without releasing raw data externally.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-white rounded-lg border border-slate-200 text-indigo-650 flex-shrink-0 shadow-sm">
+                  <Database className="w-4 h-4 text-indigo-600" />
+                </div>
+                <div>
+                  <strong className="text-xs text-slate-900 font-bold block">2. AiVerse PII Guardian</strong>
+                  <p className="text-[11px] text-slate-500 leading-normal">
+                    Identify sensitive Emirates IDs, physical Passports, and personal credit cards stored insecurely inside directories using local offline regex blocks.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-white rounded-lg border border-slate-200 text-emerald-650 flex-shrink-0 shadow-sm">
+                  <Lock className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div>
+                  <strong className="text-xs text-slate-900 font-bold block">3. AI & Prompt Governance</strong>
+                  <p className="text-[11px] text-slate-500 leading-normal">
+                    Regulate employee prompts sent to external models (ChatGPT, Gemini, Claude). Filter source-code leaks and jailbreaks instantly at the gateway level.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-3">
+              <button 
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("openSovereignPortal"));
+                }}
+                className="w-full sm:w-auto px-6 py-3 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 uppercase tracking-wide cursor-pointer font-mono"
+              >
+                <span>Launch Demo & Onboard</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              
+              <button 
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("openSovereignPortal"));
+                }}
+                className="w-full sm:w-auto px-6 py-3 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer font-mono uppercase"
+              >
+                <span>Sovereign Sandbox</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Right Layout Screenshot Mockup container (col-span-7) */}
+          <div className="lg:col-span-7">
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 shadow-2xl relative overflow-hidden select-none select-none hover:shadow-3xl transition-all">
+              
+              {/* Window Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3 text-xs font-mono">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  <span className="text-[10px] text-slate-400 ml-2 font-semibold">AiVerse-Sovereign-Portal_v3.5</span>
+                </div>
+                <span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[9px] font-black uppercase">NODE ACTIVE</span>
+              </div>
+
+              {/* Mockup Screen content - 100% Light Theme styling */}
+              <div className="space-y-4">
+                
+                {/* Header overview row */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-150">
+                  <div className="space-y-0.5">
+                    <span className="font-mono text-[8px] uppercase tracking-wider text-blue-600 block font-bold">Local Intranet Node</span>
+                    <strong className="text-slate-800 text-xs block font-bold">Sovereign AirGapped Hub - Zurich</strong>
+                  </div>
+                  <div className="flex gap-4 font-mono text-[9.5px]">
+                    <div>
+                      <span className="text-slate-400 block font-bold text-[8px] uppercase">Compliance</span>
+                      <span className="text-emerald-600 font-black">UAE PDPL (97%)</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block font-bold text-[8px] uppercase">Threat Indicators</span>
+                      <span className="text-red-500 font-extrabold">2 High Warnings</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Simulated Core stats charts */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="border border-slate-150 p-2.5 rounded-xl bg-white text-center">
+                    <span className="text-[8px] font-mono text-slate-400 block font-black uppercase">Identity Score</span>
+                    <strong className="text-xs text-emerald-600 block font-mono">14% Low Risk</strong>
+                  </div>
+                  <div className="border border-slate-150 p-2.5 rounded-xl bg-white text-center">
+                    <span className="text-[8px] font-mono text-slate-400 block font-black uppercase">Exposed Files</span>
+                    <strong className="text-xs text-rose-500 block font-mono">3 Files Flagged</strong>
+                  </div>
+                  <div className="border border-slate-150 p-2.5 rounded-xl bg-white text-center">
+                    <span className="text-[8px] font-mono text-slate-400 block font-black uppercase">Network Nodes</span>
+                    <strong className="text-xs text-slate-800 block font-mono">12 Active LAN</strong>
+                  </div>
+                </div>
+
+                {/* Real-time telemetry feed mockup in action */}
+                <div className="border border-slate-150 rounded-xl overflow-hidden bg-slate-50">
+                  <div className="p-2 border-b border-slate-150 bg-white flex justify-between items-center font-mono">
+                    <span className="text-[8.5px] font-bold uppercase text-slate-400">Exposed Emirates PII Streams</span>
+                    <span className="text-[8px] text-blue-600 font-extrabold uppercase">Live Scan Loop</span>
+                  </div>
+                  <div className="p-2.5 divide-y divide-slate-150 font-mono text-[9.5px] space-y-1.5">
+                    
+                    <div className="flex items-center justify-between py-1 text-slate-705">
+                      <span className="font-bold text-slate-850">emirates_id_vip-member.pdf</span>
+                      <span className="bg-rose-50 text-rose-600 font-bold border border-rose-100 px-1.5 py-0.5 rounded text-[8.5px]">Identified ID: 784-1992-...</span>
+                      <button 
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent("openSovereignPortal"));
+                        }} 
+                        className="text-blue-600 hover:underline hover:text-blue-850 cursor-pointer font-bold"
+                      >
+                        Quarantine
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between py-1 text-slate-705">
+                      <span className="font-bold text-slate-855">passport_copy_executive-01.jpg</span>
+                      <span className="bg-rose-50 text-rose-600 font-bold border border-rose-100 px-1.5 py-0.5 rounded text-[8.5px]">Identified Passport Spec</span>
+                      <button 
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent("openSovereignPortal"));
+                        }} 
+                        className="text-blue-600 hover:underline hover:text-blue-850 cursor-pointer font-bold"
+                      >
+                        Quarantine
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between py-1 text-slate-705">
+                      <span className="font-bold text-slate-850">financial_plan_q3_draft.zip</span>
+                      <span className="bg-emerald-50 text-emerald-600 font-bold border border-emerald-100 px-1.5 py-0.5 rounded text-[8.5px]">Encrypted & Sealed on premises</span>
+                      <span className="text-emerald-600 font-bold text-[8.5px]">Resolved</span>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Absolute overlay preview shield banner on screenshot */}
+                <div className="absolute inset-0 bg-slate-950/5 backdrop-blur-[1px] hover:backdrop-blur-none transition-all flex items-center justify-center p-4 rounded-xl group/click">
+                  <div className="bg-white p-4 rounded-2xl shadow-xl max-w-xs text-center border border-slate-200 select-none group-hover/click:scale-105 transition duration-350">
+                    <Lock className="w-5 h-5 mx-auto text-blue-650 animate-bounce mb-2" />
+                    <strong className="text-xs text-slate-900 block font-bold uppercase tracking-tight">Interactive Local Sandbox</strong>
+                    <p className="text-[10px] text-slate-500 leading-normal my-1">
+                      Click to explore registration & view details of all 22 core modules with full pre-populated forensic data matrices.
+                    </p>
+                    <button 
+                      onClick={() => {
+                        window.dispatchEvent(new CustomEvent("openSovereignPortal"));
+                      }}
+                      className="mt-2.5 py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white font-mono font-bold text-[9px] rounded-lg cursor-pointer transition flex items-center gap-1 mx-auto justify-center"
+                    >
+                      <span>Interactive Login</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
       </section>
 
       {/* SECTION 4.5: IMMUTABLE TRUST & REGULATORY COMPLIANCE SYSTEM */}
