@@ -31,7 +31,7 @@ export default function Footer() {
               <a href="#" className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-blue-500 hover:bg-slate-750 transition shadow-sm">
                 <Linkedin className="w-4 h-4" />
               </a>
-              <a href="#" className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-blue-500 hover:bg-slate-750 transition shadow-sm">
+              <a href="https://github.com/muhammedshaduli/aiverse-cyber" target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-blue-500 hover:bg-slate-750 transition shadow-sm" title="View on GitHub">
                 <Github className="w-4 h-4" />
               </a>
             </div>
