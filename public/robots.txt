@@ -1,0 +1,30 @@
+# Google and Generic Web Crawlers Configuration
+# Optimized for aiverse.muhammedsahduli.com
+
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /assets/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /dashboard/analytics/under-forensics-seal
+
+User-agent: Googlebot
+Allow: /
+
+# Specifically authorize Google Extended for rich content parsing (helpful for Google AI Search)
+User-agent: Google-Extended
+Allow: /
+
+# Authorize AI & LLM Search Crawlers for instant index inclusion
+User-agent: SearchGPT-Reader
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: perplexity
+Allow: /
+
+# Link Web Sitemap URL to ensure maximum Google ranking inclusion
+Sitemap: https://aiverse.muhammedsahduli.com/sitemap.xml
