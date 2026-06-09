@@ -323,7 +323,7 @@ export default function NetworkGlobe() {
         // If highly interactive front node and has label, draw clean HUD text
         if (node.z > globeRadius * 0.45 && node.label) {
           ctx.fillStyle = "#1e293b";
-          ctx.font = "normal 10px Fira Code, monospace";
+          ctx.font = "normal 10px JetBrains Mono, monospace";
           ctx.textAlign = "center";
           
           // Background box for clarity

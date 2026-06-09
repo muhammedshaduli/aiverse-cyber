@@ -3,12 +3,13 @@ import {
   ShieldCheck, ShieldAlert, ArrowLeft, RefreshCw, Upload, Sparkles, FileText, 
   Terminal, BarChart2, Award, Download, CheckCircle, AlertTriangle, Play, Pause,
   Lock, Zap, Sliders, ChevronRight, Eye, Grid, Info, Printer,
-  Globe, Cpu, MapPin, Layers, Server
+  Globe, Cpu, MapPin, Layers, Server, Activity
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { useLanguage } from "../context/LanguageContext";
 import { useFirebase } from "../context/FirebaseContext";
 import ReportExportPanel from "./ReportExportPanel";
+import ModuleSecurityGateway from "./ModuleSecurityGateway";
 
 interface ScanSample {
   id: string;
@@ -1307,6 +1308,7 @@ const PRESET_SAMPLES: ScanSample[] = [
 export default function TrustScannerWorkspace({ onClose }: { onClose: () => void }) {
   const { language, t } = useLanguage();
   const { triggerNewScan, updateScanMeta } = useFirebase();
+
   const [selectedPreset, setSelectedPreset] = useState<ScanSample>(PRESET_SAMPLES[0]);
   const [fileType, setFileType] = useState<"image" | "voice" | "video" | "email">("image");
   const [textInput, setTextInput] = useState(PRESET_SAMPLES[0].input);
@@ -1315,6 +1317,10 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
   const [progress, setProgress] = useState(0);
   const [activeTab, setActiveTab] = useState<"visualizer" | "parameters" | "trace">("visualizer");
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
+  
+  // Interactive scanning state variations
+  const [hoveredHotspot, setHoveredHotspot] = useState<number | null>(null);
+  const [emailView, setEmailView] = useState<"plain" | "headers">("plain");
 
   // Tunable configuration parameters state
   const [intensityMode, setIntensityMode] = useState<"standard" | "level5" | "quantum">("level5");
@@ -1501,42 +1507,41 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
     if (intensityMode === "level5") speed = 65;
     if (intensityMode === "quantum") speed = 100;
 
+    let currentProgress = 0;
     const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        const nextProgress = prev + 2;
+      currentProgress += 2;
 
-        if (nextProgress >= 45 && nextProgress < 50) {
+      if (currentProgress < 100) {
+        setProgress(currentProgress);
+
+        if (currentProgress >= 45 && currentProgress < 50) {
           setScanStep("calculating");
         }
 
         // Periodically sync progress metric to firestore backend database
-        if (nextProgress % 20 === 0 && nextProgress < 100) {
-          updateScanMeta(scanId, nextProgress, "processing", {
-            resultSummary: `Analyzing high frequency artifacts... ${nextProgress}% complete.`
+        if (currentProgress % 20 === 0) {
+          updateScanMeta(scanId, currentProgress, "processing", {
+            resultSummary: `Analyzing high frequency artifacts... ${currentProgress}% complete.`
           });
         }
+      } else {
+        clearInterval(progressInterval);
+        setProgress(100);
+        setScanStep("success");
+        setIsScanning(false);
+        // Add core finalized logs
+        setTerminalLogs((prevLogs) => [
+          ...prevLogs,
+          `[${new Date().toLocaleTimeString()}] [SUCCESS] Diagnostic suite finalized successfully.`,
+          `[${new Date().toLocaleTimeString()}] [LEDGER] Forensic Certificate Generated. Signed SHA256: 48f9ac12...`
+        ]);
 
-        if (nextProgress >= 100) {
-          clearInterval(progressInterval);
-          setScanStep("success");
-          setIsScanning(false);
-          // Add core finalized logs
-          setTerminalLogs((prevLogs) => [
-            ...prevLogs,
-            `[${new Date().toLocaleTimeString()}] [SUCCESS] Diagnostic suite finalized successfully.`,
-            `[${new Date().toLocaleTimeString()}] [LEDGER] Forensic Certificate Generated. Signed SHA256: 48f9ac12...`
-          ]);
-
-          // Seal finalized scan metadata into decentralized tenant collections
-          updateScanMeta(scanId, 100, "completed", {
-            completedAt: new Date().toISOString(),
-            resultSummary: selectedPreset.expectedOutput.status
-          });
-
-          return 100;
-        }
-        return nextProgress;
-      });
+        // Seal finalized scan metadata into decentralized tenant collections
+        updateScanMeta(scanId, 100, "completed", {
+          completedAt: new Date().toISOString(),
+          resultSummary: selectedPreset.expectedOutput.status
+        });
+      }
     }, speed);
   };
 
@@ -1631,7 +1636,7 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
       </header>
 
       {/* Main Grid Workspace */}
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 md:p-6 max-w-7xl mx-auto w-full">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-4 md:p-6 w-full">
         
         {/* LEFT COLUMN: Setup, Ingestion & Tuners (col-span-4) */}
         <div className="lg:col-span-4 space-y-6">
@@ -1830,130 +1835,408 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
               
               {activeTab === "visualizer" && (
                 <div className="space-y-4 flex-1 flex flex-col justify-between">
+                  {/* Dynamic NIST Forensic Phase Tracker */}
+                  <div className="grid grid-cols-4 gap-2 bg-slate-950 p-2.5 rounded-xl border border-slate-850/80 mb-2">
+                    {[
+                      { id: "ingest", min: 0, label: "Ingest Phase", desc: "SHA256 Anchor" },
+                      { id: "segment", min: 25, label: "Raster Spectrum", desc: "CNN Grid Mesh" },
+                      { id: "extract", min: 65, label: "Neural Extraction", desc: "Meta Exif Check" },
+                      { id: "commit", min: 90, label: "Ledger Commit", desc: "Block Signed Seal" }
+                    ].map((phase, idx) => {
+                      const isActive = progress >= phase.min;
+                      const isPreActive = isScanning && progress >= (phase.min - 15) && progress < phase.min;
+                      return (
+                        <div 
+                          key={phase.id} 
+                          className={`p-1.5 rounded-lg border text-center transition-all ${
+                            scanStep === "success" && idx === 3
+                              ? "bg-emerald-950/40 border-emerald-800/80"
+                              : isActive 
+                                ? "bg-slate-900 border-slate-700/85" 
+                                : isPreActive
+                                  ? "bg-blue-950/20 border-blue-800/40 animate-pulse"
+                                  : "bg-slate-950 border-slate-900 opacity-60"
+                          }`}
+                        >
+                          <div className="flex items-center justify-center gap-1">
+                            {scanStep === "success" ? (
+                              <CheckCircle className="w-3 h-3 text-emerald-400" />
+                            ) : isScanning && progress >= phase.min && progress < (phase.min + 25) ? (
+                              <RefreshCw className="w-2.5 h-2.5 text-blue-400 animate-spin" />
+                            ) : isActive ? (
+                              <CheckCircle className="w-3 h-3 text-blue-400" />
+                            ) : (
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-700" />
+                            )}
+                            <span className="text-[8.5px] font-mono font-bold uppercase text-slate-300">
+                              {phase.label}
+                            </span>
+                          </div>
+                          <p className="text-[7.5px] font-mono text-slate-500 mt-0.5 truncate">{phase.desc}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+
                   <div className="space-y-2 relative">
                     <div className="flex justify-between items-center text-[10px] font-mono font-bold uppercase text-slate-500">
                       <span>Spectral Ingestion Scope</span>
-                      <span className="text-blue-400 animate-pulse">
-                        {isScanning ? "SCOPE ACTIVE // SWEEPING" : "STANDBY"}
+                      <span className="text-blue-400 animate-pulse flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+                        {isScanning ? `SCOPE ACTIVE // SWEEPING [${progress}%]` : "STANDBY"}
                       </span>
                     </div>
 
-                    {/* Image / video scanning simulator */}
-                    {(fileType === "image" || fileType === "video") && (
+                    {/* Image Specimen Viewer Frame featuring SVG head wireframe mesh and interactive anomaly hotspot indicators */}
+                    {fileType === "image" && (
                       <div className="w-full h-44 bg-slate-950 rounded-xl relative border border-slate-850/80 overflow-hidden flex items-center justify-center">
                         {/* Scanning visual laser bar overlay */}
                         {isScanning && (
                           <motion.div
-                            initial={{ y: 0 }}
-                            animate={{ y: [0, 176, 0] }}
-                            transition={{ repeat: Infinity, duration: 4.5, ease: "linear" }}
-                            className="absolute left-0 right-0 h-0.5 bg-blue-500 shadow-lg shadow-blue-500 z-10 pointer-events-none"
+                            initial={{ y: -10 }}
+                            animate={{ y: [0, 165, 0] }}
+                            transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
+                            className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_12px_rgba(59,130,246,0.8)] z-10 pointer-events-none"
                           />
                         )}
 
                         {/* Grid matrix pattern layer */}
-                        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-40 pointer-events-none" />
+                        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1.5px,transparent_1.5px)] [background-size:14px_14px] opacity-40 pointer-events-none" />
 
-                        {/* Dynamic Bounding Box Overlay graphics depending on scanned output */}
-                        <div className="text-center space-y-2 max-w-sm selection:bg-slate-900 pointer-events-auto">
-                          {fileType === "image" ? (
-                            <div className="relative border border-slate-800 p-4 rounded-xl bg-slate-900/60 flex flex-col items-center">
-                              <Info className="w-5 h-5 text-blue-450 mb-1" />
-                              <p className="text-[11px] font-semibold text-slate-300">
-                                {selectedPreset.fileName}
-                              </p>
-                              <p className="text-[9px] font-mono text-slate-500">
-                                Matrix: 1042 x 1042 • JPEG pixel coherence mapped
-                              </p>
-                              
-                              {/* Boundary targets overlays */}
-                              {isScanning && (
-                                <div className="absolute top-2 left-6 border-t-2 border-l-2 border-blue-500 w-4 h-4 animate-pulse" />
-                              )}
-                              {isScanning ? (
-                                <div className="absolute bottom-2 right-6 border-b-2 border-r-2 border-rose-500 w-4 h-4 animate-ping" />
-                              ) : scanStep === "success" && selectedPreset.expectedOutput.score < 50 ? (
-                                <div className="absolute bottom-2 right-6 border border-rose-500 bg-rose-950/80 text-[8px] text-rose-400 font-mono px-1 py-0.5 rounded font-black uppercase">
-                                  GAN boundary anomaly located!
-                                </div>
-                              ) : null}
+                        {/* Outer Coordinate corner marks */}
+                        <div className="absolute top-2 left-2 text-[8px] font-mono text-slate-650">0x0000</div>
+                        <div className="absolute top-2 right-2 text-[8px] font-mono text-slate-650">0x0FFF</div>
+                        <div className="absolute bottom-2 left-2 text-[8px] font-mono text-slate-650">0xF000</div>
+                        <div className="absolute bottom-2 right-2 text-[8px] font-mono text-slate-650">0xFFFF</div>
+                        
+                        {/* Interactive holographic face wireframe mapping layout */}
+                        <div className="relative w-full h-full flex items-center justify-center">
+                          <svg className={`w-40 h-40 transition-colors duration-300 ${isScanning ? "text-blue-500/30" : scanStep === "success" ? (selectedPreset.expectedOutput.score > 50 ? "text-emerald-500/20" : "text-rose-500/20") : "text-slate-800"}`} viewBox="0 0 100 100" fill="none" stroke="currentColor">
+                            <path d="M 50 12 C 32 12, 26 30, 26 52 C 26 74, 34 88, 50 88 C 66 88, 74 74, 74 52 C 74 30, 68 12, 50 12 Z" strokeWidth="0.75" strokeDasharray="3,3" />
+                            <circle cx="50" cy="50" r="32" strokeWidth="0.5" strokeDasharray="2,4" />
+                            <line x1="12" y1="50" x2="88" y2="50" strokeWidth="0.25" strokeDasharray="1,2" />
+                            <line x1="50" y1="12" x2="50" y2="88" strokeWidth="0.25" strokeDasharray="1,2" />
+                            
+                            {/* Eye mappings */}
+                            <circle cx="38" cy="45" r="4.5" strokeWidth="0.75" />
+                            <circle cx="62" cy="45" r="4.5" strokeWidth="0.75" />
+                            <path d="M 32 45 L 44 45 M 56 45 L 68 45" strokeWidth="0.5" />
+                            
+                            {/* Mouth polygon */}
+                            <path d="M 38 68 L 50 64 L 62 68 L 50 72 Z" strokeWidth="0.75" />
+                            {/* Jaw contours */}
+                            <path d="M 30 72 L 50 86 L 70 72" strokeWidth="0.5" strokeDasharray="2,2" />
+                          </svg>
+
+                          {/* Interactive anomaly hotspot markers linked to the list of expected anomalies */}
+                          {scanStep === "success" && (
+                            <>
+                              {(selectedPreset.expectedOutput.anomalies || []).map((anom, idx) => {
+                                const coordinates = [
+                                  { left: "38%", top: "35%", part: "Ocular Vector" },
+                                  { left: "62%", top: "52%", part: "Reticular Noise Patch" },
+                                  { left: "50%", top: "68%", part: "Sub-dermal Synthesis Border" },
+                                  { left: "45%", top: "20%", part: "Exif Signature Match" }
+                                ];
+                                const coord = coordinates[idx % coordinates.length];
+                                const isAuthentic = selectedPreset.expectedOutput.score > 50;
+
+                                return (
+                                  <div
+                                    key={idx}
+                                    style={{ left: coord.left, top: coord.top }}
+                                    onMouseEnter={() => setHoveredHotspot(idx)}
+                                    onMouseLeave={() => setHoveredHotspot(null)}
+                                    className="absolute -translate-x-1/2 -translate-y-1/2 group cursor-help z-20"
+                                  >
+                                    <div className={`relative flex items-center justify-center w-7 h-7 rounded-full transition-all duration-300 ${
+                                      isAuthentic
+                                        ? "bg-emerald-500/10 hover:bg-emerald-500/20"
+                                        : "bg-rose-500/20 hover:bg-rose-500/30 animate-pulse"
+                                    }`}>
+                                      <span className={`w-3 h-3 rounded-full border shadow-md transition-transform duration-300 group-hover:scale-125 ${
+                                        isAuthentic 
+                                          ? "bg-emerald-500 border-emerald-300" 
+                                          : "bg-rose-500 border-rose-300"
+                                      }`} />
+                                      {/* Ripple ring */}
+                                      <span className={`absolute inset-0 rounded-full border animate-ping opacity-60 ${isAuthentic ? "border-emerald-500" : "border-rose-500"}`} />
+                                    </div>
+
+                                    {/* Advanced HUD Interactive Tooltip on hover */}
+                                    {(hoveredHotspot === idx || hoveredHotspot === null && idx === 0) && (
+                                      <div className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2.5 rounded-lg border text-[9px] font-mono leading-relaxed transition-all shadow-xl z-40 select-none bg-slate-950 ${
+                                        isAuthentic ? "border-emerald-800/80" : "border-rose-800/80"
+                                      }`}>
+                                        <div className="flex justify-between items-center border-b border-slate-900 pb-1 mb-1 text-slate-400 uppercase font-bold text-[8px] tracking-wide">
+                                          <span>{coord.part}</span>
+                                          <span className={isAuthentic ? "text-emerald-400" : "text-rose-400"}>
+                                            {isAuthentic ? "VERIFIED" : "FLAGGED"}
+                                          </span>
+                                        </div>
+                                        <p className="text-slate-300">{anom}</p>
+                                        <div className={`absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-x-4 border-x-transparent border-t-4 ${
+                                          isAuthentic ? "border-t-slate-950" : "border-t-slate-950"
+                                        }`} />
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
+                          
+                          {/* Live specimen info readout overlay */}
+                          <div className="absolute bottom-2 left-3 bg-slate-950/80 border border-slate-900 px-2 py-1 rounded-md text-[8.5px] font-mono text-slate-400 max-w-[200px] truncate leading-normal">
+                            <span className="text-slate-500">SPECIMEN:</span> {selectedPreset.fileName}
+                            <br />
+                            <span className="text-slate-500">TYPE:</span> Image Resolution coherence
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Audio Spectrogram with Active Oscilloscope, Phase Vectors and Frequency Channel Mixers */}
+                    {fileType === "voice" && (
+                      <div className="w-full h-44 bg-slate-950 rounded-xl p-4 relative border border-slate-850/80 overflow-hidden flex flex-col justify-between">
+                        {/* Soft light grid overlay */}
+                        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:12px_12px] opacity-30 pointer-events-none" />
+                        
+                        {/* Mini Oscilloscope / Dials HUD bar */}
+                        <div className="flex items-center justify-between text-[8px] font-mono text-slate-500 pb-1 border-b border-slate-900">
+                          <span className="flex items-center gap-1">
+                            <Activity className="w-3 h-3 text-cyan-400" />
+                            ACOUSTIC FORMANT HARMONICS
+                          </span>
+                          <span className="text-slate-400">PHASES: {isScanning ? "MUTABLE RE-DECRYPTING..." : "LOCKED"}</span>
+                        </div>
+
+                        {/* Main waveform and vector circular scope representation */}
+                        <div className="grid grid-cols-12 gap-3 flex-grow my-1 items-center">
+                          {/* Vector dynamic phase circle (Oscilloscope scope) */}
+                          <div className="col-span-3 flex flex-col items-center justify-center border-r border-slate-900 pr-2">
+                            <span className="text-[7px] text-slate-500 font-mono tracking-widest uppercase block mb-1">Vector Scope</span>
+                            <div className="relative w-16 h-16 rounded-full border border-slate-800 flex items-center justify-center bg-slate-950/80">
+                              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" stroke="#1e293b" strokeWidth="0.5" fill="none" strokeDasharray="2,2" />
+                                <circle cx="50" cy="50" r="25" stroke="#1e293b" strokeWidth="0.5" fill="none" />
+                                {/* Cross axes */}
+                                <line x1="10" y1="50" x2="90" y2="50" stroke="#101a2c" strokeWidth="0.5" />
+                                <line x1="50" y1="10" x2="50" y2="90" stroke="#101a2c" strokeWidth="0.5" />
+                                
+                                {/* Orbit vector curve */}
+                                <motion.circle
+                                  cx={50}
+                                  cy={50}
+                                  r={isScanning ? 24 : 32}
+                                  stroke={isScanning ? "#06b6d4" : scanStep === "success" && selectedPreset.expectedOutput.score > 50 ? "#10b981" : scanStep === "success" ? "#f43f5e" : "#475569"}
+                                  strokeWidth="1.5"
+                                  fill="none"
+                                  strokeDasharray="40 90"
+                                  animate={{ rotate: 360 }}
+                                  transition={{ repeat: Infinity, duration: isScanning ? 0.8 : 4.5, ease: "linear" }}
+                                />
+                              </svg>
+                              <div className={`absolute text-[8px] font-mono ${isScanning ? "text-cyan-400" : "text-slate-500"}`}>
+                                {isScanning ? "RE-O" : "COH"}
+                              </div>
                             </div>
-                          ) : (
-                            <div className="relative border border-slate-800 p-4 rounded-xl bg-slate-900/60 flex flex-col items-center">
-                              <Play className="w-5 h-5 text-blue-450 mb-1 animate-ping" />
-                              <p className="text-[11px] font-semibold text-slate-300">
-                                Temporal Sequence Decoder Frame
-                              </p>
-                              <p className="text-[9px] font-mono text-slate-500">
-                                fps: 29.97 • optical flow sequence calculation active
-                              </p>
-                              
-                              {/* Boundary targets overlays */}
-                              {isScanning && (
-                                <div className="text-[9px] font-mono text-emerald-400 mt-2">
-                                  Decoding frames: [ {progress * 2} / 240 ]
+                          </div>
+
+                          {/* Dynamic spectral bars */}
+                          <div className="col-span-9 h-14 flex items-end justify-between gap-[2.5px] relative">
+                            {volatility.map((height, idx) => {
+                              const isFakeAlert = scanStep === "success" && selectedPreset.expectedOutput.score < 50;
+                              return (
+                                <div key={idx} className="flex-1 flex flex-col justify-end h-full">
+                                  <motion.div
+                                    animate={{ height: `${height}%` }}
+                                    transition={{ type: "spring", stiffness: 120, damping: 14 }}
+                                    className={`w-full rounded-t-sm transition-colors duration-200 ${
+                                      isScanning 
+                                        ? "bg-gradient-to-t from-cyan-600 via-blue-500 to-indigo-400 shadow-sm shadow-blue-900/30" 
+                                        : scanStep === "success" 
+                                          ? (isFakeAlert ? "bg-rose-500 shadow-sm shadow-rose-900/40" : "bg-emerald-500 shadow-sm shadow-emerald-900/40")
+                                          : "bg-slate-800"
+                                    }`}
+                                  />
                                 </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                        
+                        <div className="flex justify-between items-center border-t border-slate-900 pt-1 text-[8px] font-mono text-slate-500 uppercase">
+                          <span>Sub-vocal F0</span>
+                          <span>Voice Matrix Standard Formant Range</span>
+                          <span>Harmonic Delta Limit</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Video Ingestion Frame with frame timeline cards tracker */}
+                    {fileType === "video" && (
+                      <div className="w-full h-44 bg-slate-950 rounded-xl p-3.5 relative border border-slate-850/80 overflow-hidden flex flex-col justify-between">
+                        {/* Film Grid Lines */}
+                        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-25 pointer-events-none" />
+                        
+                        <div className="flex items-center justify-between text-[8px] font-mono text-slate-500 pb-1.5 border-b border-slate-905">
+                          <span className="flex items-center gap-1 font-bold">
+                            <Play className="w-3 h-3 text-rose-500" />
+                            CHRONOLOGICAL TIMELINE BOUNDARY SEGMENTS
+                          </span>
+                          <span className="bg-slate-900 px-1.5 py-0.5 rounded text-slate-400 text-[7px]">
+                            {isScanning ? `FRAME ${Math.floor((progress * 240) / 100)} / 240` : "TIMELINE STATIC"}
+                          </span>
+                        </div>
+
+                        {/* Row of Frame Cells */}
+                        <div className="grid grid-cols-6 gap-1.5 my-1.5 flex-grow items-center relative">
+                          {Array.from({ length: 6 }).map((_, fIdx) => {
+                            const frameStep = fIdx * 16.6;
+                            const frameId = `F-0${(fIdx + 1) * 35}`;
+                            const isProcessed = progress >= frameStep;
+                            const isFakeVideo = selectedPreset.expectedOutput.score < 50;
+                            // Target anomalies found in frames 3 and 4 for deepfakes
+                            const isAnomalousFrame = (fIdx === 2 || fIdx === 4) && scanStep === "success" && isFakeVideo;
+
+                            return (
+                              <div 
+                                key={fIdx} 
+                                className={`relative h-14 border rounded-lg flex flex-col justify-between p-1.5 font-mono text-[8px] transition-all content-center ${
+                                  isAnomalousFrame 
+                                    ? "bg-rose-950/40 border-rose-800/80 text-rose-300"
+                                    : isProcessed 
+                                      ? "bg-slate-900 border-slate-700/80 text-slate-300" 
+                                      : "bg-slate-950 border-slate-900 text-slate-600"
+                                }`}
+                              >
+                                <div className="flex justify-between items-center text-[7px] border-b border-slate-800 border-opacity-30 pb-0.5">
+                                  <span>{frameId}</span>
+                                  {isAnomalousFrame && <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping" />}
+                                </div>
+                                
+                                <div className="flex-1 flex items-center justify-center text-center font-bold font-sans text-[7.5px] truncate">
+                                  {isAnomalousFrame ? (
+                                    <span className="text-rose-400 font-black uppercase text-[7px]">SEAM INC</span>
+                                  ) : isProcessed ? (
+                                    <span className="text-slate-400">PASSED</span>
+                                  ) : (
+                                    <span className="text-slate-650">PENDING</span>
+                                  )}
+                                </div>
+
+                                <div className="text-[6px] text-slate-500 text-right uppercase">
+                                  {isAnomalousFrame ? "Alert 0x3" : "OK"}
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {/* Scanning pointer/needle sweeping over frames */}
+                          {isScanning && (
+                            <motion.div
+                              style={{ left: `${progress}%` }}
+                              className="absolute top-0 bottom-0 w-0.5 bg-blue-500 z-20 shadow-[0_0_10px_rgba(59,130,246,1)] pointer-events-none"
+                            />
+                          )}
+                        </div>
+
+                        {/* Bottom metrics bar */}
+                        <div className="flex justify-between items-center text-[7.5px] font-mono text-slate-500">
+                          <span>TEMPORAL JITTER: {isScanning ? `${(Math.random() * 0.4 + 0.1).toFixed(4)} MS` : "0.024 MS"}</span>
+                          <span>OPTICAL VECTOR FLOW: {isScanning ? "SWEEPING SPATIAL GRAPH" : "LOCK CALIBRATED"}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Email deep semantic analysis with secure DNS check headers block */}
+                    {fileType === "email" && (
+                      <div className="w-full h-44 bg-slate-950 rounded-xl border border-slate-850/80 overflow-hidden flex flex-col justify-between p-3.5">
+                        <div className="flex justify-between items-center text-[8.5px] font-mono pb-1 border-b border-slate-900 uppercase">
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => setEmailView("plain")}
+                              className={`font-bold transition-all ${emailView === "plain" ? "text-cyan-400 border-b border-cyan-500 pb-0.5" : "text-slate-550 hover:text-slate-300"}`}
+                            >
+                              1. LEXICAL DETECTOR
+                            </button>
+                            <button 
+                              onClick={() => setEmailView("headers")}
+                              className={`font-bold transition-all ${emailView === "headers" ? "text-cyan-400 border-b border-cyan-500 pb-0.5" : "text-slate-550 hover:text-slate-300"}`}
+                            >
+                              2. INGRESS SMTP HEADER ROUTE
+                            </button>
+                          </div>
+                          
+                          <span className="text-slate-500">DKIM VALIDATOR</span>
+                        </div>
+
+                        {/* Content display blocks based on sub-tabs */}
+                        <div className="flex-grow my-2 overflow-y-auto text-[9.5px] font-mono leading-relaxed text-slate-400 select-all scrollbar-thin scrollbar-thumb-slate-800">
+                          {emailView === "plain" ? (
+                            <>
+                              {selectedPreset.id === "email-1" ? (
+                                <p>
+                                  <span className="text-rose-500/80 block font-bold mb-1">[ALERT: HARMFUL EMOTIONAL COGNITIVE PRESSURE FLAG]</span>
+                                  Subject: <span className="text-rose-400 font-bold bg-rose-950 border border-rose-900 px-1 rounded">IMMEDIATE BREAKING SECURITY BREACH</span>
+                                  <br /><br />
+                                  We have identified a security intrusion inside your company cluster. You are instructed to <span className="bg-rose-950/20 border border-dotted border-rose-800 text-rose-300 px-1 rounded hover:bg-rose-900/30 transition">verify credentials by clicking verification portal</span> within 2 hours or face suspension...
+                                </p>
+                              ) : (
+                                <p className="whitespace-pre-line text-slate-350">{textInput}</p>
                               )}
+                            </>
+                          ) : (
+                            <div className="space-y-1.5 text-[8.5px] text-slate-400 leading-normal">
+                              <div className="p-1.5 rounded bg-slate-900/40 border border-slate-850 flex items-center justify-between">
+                                <div>
+                                  <span className="text-slate-500 block">SPF RECORD HASH VALUE:</span>
+                                  <span className="text-slate-300 font-mono">v=spf1 ip4:44.204.31.29 ip4:198.51.100.41 ~all</span>
+                                </div>
+                                <span className={`px-1.5 py-0.5 rounded font-black ${selectedPreset.expectedOutput.score > 50 ? "bg-emerald-950 text-emerald-400 border border-emerald-900" : "bg-rose-950 text-rose-400 border border-rose-900"}`}>
+                                  {selectedPreset.expectedOutput.score > 50 ? "PASS" : "SPOOF - FAIL"}
+                                </span>
+                              </div>
+                              <div className="p-1.5 rounded bg-slate-900/40 border border-slate-850 flex items-center justify-between">
+                                <div>
+                                  <span className="text-slate-500 block">DKIM RSA SIGNATURE DNS:</span>
+                                  <span className="text-slate-300 font-mono">d=corporate-verification.ai selector=main key=RSA-2048</span>
+                                </div>
+                                <span className={`px-1.5 py-0.5 rounded font-black ${selectedPreset.expectedOutput.score > 50 ? "bg-emerald-950 text-emerald-400 border border-emerald-900" : "bg-rose-950 text-rose-400 border border-rose-900"}`}>
+                                  {selectedPreset.expectedOutput.score > 50 ? "PASS" : "FAIL"}
+                                </span>
+                              </div>
+                              <div className="p-1.5 rounded bg-slate-900/40 border border-slate-850 flex items-center justify-between">
+                                <div>
+                                  <span className="text-slate-500 block">DMARC POLICY COMPLIANCE:</span>
+                                  <span className="text-slate-300 font-mono">p=reject; integrity_variance=strict</span>
+                                </div>
+                                <span className="text-indigo-400 font-extrabold uppercase">ENFORCED</span>
+                              </div>
                             </div>
                           )}
                         </div>
-                      </div>
-                    )}
 
-                    {/* Audio Spectrogram Frequency Oscilloscope bars */}
-                    {fileType === "voice" && (
-                      <div className="w-full h-44 bg-slate-950 rounded-xl p-4 relative border border-slate-850/80 overflow-hidden flex flex-col justify-end">
-                        {/* Soft light grid overlay */}
-                        <div className="absolute inset-0 bg-grid opacity-5 pointer-events-none" />
-                        
-                        <div className="flex items-end justify-between h-30 gap-[3px]">
-                          {volatility.map((height, idx) => (
-                            <div key={idx} className="flex-1 flex flex-col justify-end h-full">
-                              <motion.div
-                                animate={{ height: `${height}%` }}
-                                transition={{ type: "spring", stiffness: 100, damping: 15 }}
-                                className={`w-full rounded-t-sm transition-colors duration-150 ${isScanning ? "bg-red-500 shadow-sm shadow-red-900" : "bg-gradient-to-t from-blue-650 to-cyan-500"}`}
-                              />
-                            </div>
-                          ))}
+                        <div className="flex justify-between items-center text-[7.5px] font-mono text-slate-500 border-t border-slate-900 pt-1.5">
+                          <span>LEGAL CERTIFICATE FORWARDING: OK</span>
+                          <span className={selectedPreset.expectedOutput.score > 50 ? "text-emerald-500 font-semibold" : "text-rose-500 font-bold"}>
+                            {selectedPreset.expectedOutput.score > 50 ? "ADMISSIBLE IN REGISTERS" : "CRITICAL INTRUSION ALERT"}
+                          </span>
                         </div>
-                        
-                        <div className="flex justify-between items-center mt-2 pt-1 border-t border-slate-800 text-[8px] font-mono text-slate-500 uppercase">
-                          <span>100Hz</span>
-                          <span>1kHz (Vocal core)</span>
-                          <span>8kHz</span>
-                          <span>16kHz (Formant anomalies)</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Email plaintext semantic inspect */}
-                    {fileType === "email" && (
-                      <div className="w-full h-44 bg-slate-950 rounded-xl p-4 border border-slate-850/80 overflow-y-auto text-[10px] font-mono text-slate-400 leading-relaxed selection:bg-slate-800">
-                        {selectedPreset.id === "email-1" ? (
-                          <>
-                            <span className="text-slate-550">[HEADER DECRYPTED COGNITIVE WEAPON VECTOR]</span>
-                            <br /><br />
-                            Subject: <span className="bg-rose-950/65 border border-rose-900/60 px-1 py-0.5 rounded text-rose-400 font-bold">IMMEDIATE ACTION REQUIRED</span>
-                            <br /><br />
-                            We have identified a security breach within our primary network architecture. You are requested to <span className="bg-amber-950 border border-amber-800 text-amber-400 px-1 rounded">verify your security credentials</span> immediately...
-                          </>
-                        ) : (
-                          textInput
-                        )}
                       </div>
                     )}
 
                   </div>
 
-                  {/* REAL-TIME SIGNAL PROCESSING CONSOLE */}
+                  {/* REAL-TIME CONTIGUOUS SIGNAL PROCESSING CONSOLE */}
                   <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 space-y-3.5 relative">
                     <div className="flex items-center justify-between border-b border-slate-850/60 pb-2">
                       <span className="text-[9px] font-mono tracking-widest text-slate-400 font-bold uppercase flex items-center gap-1.5">
                         <Layers className="w-3.5 h-3.5 text-blue-500 animate-pulse" />
                         Real-Time Signal Processing Suite
                       </span>
-                      <span className="text-[8px] font-mono bg-blue-950/80 text-blue-400 px-2 py-0.5 border border-blue-900/60 rounded uppercase">
+                      <span className="text-[8px] font-mono bg-blue-950/40 text-blue-400 px-2 py-0.5 border border-blue-900/60 rounded uppercase">
                         {isScanning ? "DSP CORES ACTIVE" : "ENGINE STANDBY"}
                       </span>
                     </div>
@@ -1971,7 +2254,7 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
                           </div>
 
                           {/* 6x6 pixel grid visualization */}
-                          <div className="grid grid-cols-6 gap-1 max-w-[120px] mx-auto my-2 p-1.5 bg-slate-900/40 rounded border border-slate-900">
+                          <div className="grid grid-cols-6 gap-1 max-w-[120px] mx-auto my-2 p-1.5 bg-slate-905/40 rounded border border-slate-900">
                             {Array.from({ length: 36 }).map((_, i) => {
                               return (
                                 <motion.div
@@ -2031,7 +2314,7 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
                           <div className="space-y-1.5 my-2">
                             {/* Bullet 1: Anchor Hash */}
                             <div className="flex items-center justify-between text-[8px] font-mono select-none">
-                              <span className="text-slate-400 truncate max-w-[85px] block">1. SHA-256 HASH</span>
+                              <span className="text-slate-405 truncate max-w-[85px] block font-semibold">1. SHA-256 HASH</span>
                               {isScanning ? (
                                 progress >= 15 ? (
                                   <span className="text-emerald-400 font-bold bg-emerald-950/80 px-1 py-0.2 rounded border border-emerald-900">SECURE:d892</span>
@@ -2047,7 +2330,7 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
 
                             {/* Bullet 2: Ingress IP */}
                             <div className="flex items-center justify-between text-[8px] font-mono select-none">
-                              <span className="text-slate-400 truncate max-w-[85px] block">2. IP ADDRESS</span>
+                              <span className="text-slate-400 truncate max-w-[85px] block font-semibold">2. IP ADDRESS</span>
                               {isScanning ? (
                                 progress >= 40 ? (
                                   <span className="text-blue-400 font-bold truncate max-w-[65px]" title={selectedPreset.expectedOutput.creatorIp}>{selectedPreset.expectedOutput.creatorIp.split(' ')[0]}</span>
@@ -2063,12 +2346,12 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
 
                             {/* Bullet 3: Coordinates */}
                             <div className="flex items-center justify-between text-[8px] font-mono select-none">
-                              <span className="text-slate-400 truncate max-w-[85px] block">3. GEOLOCATION</span>
+                              <span className="text-slate-400 truncate max-w-[85px] block font-semibold">3. GEOLOCATION</span>
                               {isScanning ? (
                                 progress >= 65 ? (
                                   <span className="text-indigo-400 font-bold truncate max-w-[65px]" title={selectedPreset.expectedOutput.geoCoordinates}>{selectedPreset.expectedOutput.geoCoordinates.split(' ')[0]}</span>
                                 ) : (
-                                  <span className="text-slate-500 font-medium">MAPPING...</span>
+                                  <span className="text-slate-505 font-medium">MAPPING...</span>
                                 )
                               ) : scanStep === "success" ? (
                                 <span className="text-indigo-400 font-bold truncate max-w-[65px]">{selectedPreset.expectedOutput.geoCoordinates.split(' ')[0]}</span>
@@ -2079,7 +2362,7 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
 
                             {/* Bullet 4: HW Device */}
                             <div className="flex items-center justify-between text-[8px] font-mono select-none">
-                              <span className="text-slate-400 truncate max-w-[85px] block">4. CAPTURE DEV</span>
+                              <span className="text-slate-400 truncate max-w-[85px] block font-semibold">4. CAPTURE DEV</span>
                               {isScanning ? (
                                 progress >= 90 ? (
                                   <span className="text-cyan-400 font-bold truncate max-w-[65px]" title={selectedPreset.expectedOutput.creatorDevice}>{selectedPreset.expectedOutput.creatorDevice.split(' ')[0]}</span>
@@ -2174,20 +2457,20 @@ export default function TrustScannerWorkspace({ onClose }: { onClose: () => void
                     {/* Spectral analyzer dials below */}
                     <div className="grid grid-cols-3 gap-2 border-t border-slate-900 pt-3">
                       <div className="bg-slate-950 p-2 rounded-xl border border-slate-900/80 text-center font-mono">
-                        <span className="text-[7.5px] text-slate-500 block uppercase font-bold">Biometric variance</span>
+                        <span className="text-[7.5px] text-slate-505 block uppercase font-bold">Biometric variance</span>
                         <strong className={`text-[10px] sm:text-[11px] ${isScanning ? "text-rose-500 animate-pulse" : "text-white"}`}>
                           {isScanning ? (Math.random() * 80).toFixed(1) + "% VAR" : selectedPreset.expectedOutput.score > 50 ? "0.2% organic" : "84.2% syn-formants"}
                         </strong>
                       </div>
                       <div className="bg-slate-950 p-2 rounded-xl border border-slate-900/80 text-center font-mono">
                         <span className="text-[7.5px] text-slate-500 block uppercase font-bold">Intensity level</span>
-                        <strong className="text-[10px] sm:text-[11px] uppercase text-slate-300">
+                        <strong className="text-[10px] sm:text-[11px] uppercase text-cyan-400 font-bold">
                           {intensityMode}
                         </strong>
                       </div>
                       <div className="bg-slate-950 p-2 rounded-xl border border-slate-900/80 text-center font-mono">
-                        <span className="text-[7.5px] text-slate-500 block uppercase font-bold">NIST Confidence</span>
-                        <strong className="text-[10px] sm:text-[11px] text-blue-400">
+                        <span className="text-[7.5px] text-slate-505 block uppercase font-bold">NIST Confidence</span>
+                        <strong className="text-[10px] sm:text-[11px] text-blue-400 font-bold">
                           {isScanning ? "PROBING" : "99.87%"}
                         </strong>
                       </div>

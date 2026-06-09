@@ -76,8 +76,8 @@ export default function Navigation() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-slate-100 py-3 px-4 md:px-8">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <header className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-md border-b border-slate-100 py-3 px-6 md:px-12 lg:px-20 xl:px-32">
+        <div className="w-full flex items-center justify-between">
           
           {/* Organization Branded Logo */}
           <div className="flex items-center gap-2">
@@ -103,6 +103,30 @@ export default function Navigation() {
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600 animate-ping" />
               {t.nav.ledger}
             </a>
+            <button 
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("openMindSync"));
+              }}
+              className="text-pink-600 hover:text-pink-700 font-bold flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 text-xs"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-600"></span>
+              </span>
+              MindSync™
+            </button>
+            <button 
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent("openAiVerseOne"));
+              }}
+              className="text-cyan-600 hover:text-cyan-700 font-bold flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 text-xs"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-600"></span>
+              </span>
+              AiVerse ONE™
+            </button>
             <button 
               onClick={() => {
                 window.dispatchEvent(new CustomEvent("openAdminConsole"));

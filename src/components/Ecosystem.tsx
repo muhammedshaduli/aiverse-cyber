@@ -107,10 +107,10 @@ export default function Ecosystem() {
 
       // Draw central label text
       ctx.fillStyle = "#0f172a";
-      ctx.font = "bold 11px Space Grotesk, sans-serif";
+      ctx.font = "bold 11px Plus Jakarta Sans, sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("AiVerse ONE", cx, cy - 22);
-      ctx.font = "normal 8px Fira Code, monospace";
+      ctx.font = "normal 8px JetBrains Mono, monospace";
       ctx.fillStyle = "#10b981";
       ctx.fillText("NEURAL BRAIN ONLINE", cx, cy - 12);
 
@@ -193,7 +193,7 @@ export default function Ecosystem() {
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-zinc-100 shadow-sm p-6 md:p-10 max-w-7xl mx-auto">
+    <div className="bg-white rounded-none border-y border-zinc-200/50 py-16 px-6 md:px-12 lg:px-20 xl:px-32 w-full">
       <div className="text-center max-w-3xl mx-auto mb-10 space-y-2">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-semibold">
           <Layers className="w-3.5 h-3.5" />

@@ -2,8 +2,8 @@ import { ShieldCheck, Mail, Phone, MapPin, Globe, Linkedin, Twitter, Github } fr
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-900 border-t border-slate-950 pt-16 pb-8 px-6 md:px-8 text-slate-300">
-      <div className="max-w-7xl mx-auto space-y-12">
+    <footer className="bg-slate-900 border-t border-slate-950 pt-16 pb-8 px-6 md:px-12 lg:px-20 xl:px-32 text-slate-300 w-full">
+      <div className="w-full space-y-12">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 text-left">
           
           {/* Brand/Slogan Side Column */}

@@ -126,7 +126,7 @@ export default function SuccessDemosMetrics() {
   const currentModalDetails = demoCards.find(c => c.id === activeModalId);
 
   return (
-    <div className="space-y-24 max-w-7xl mx-auto">
+    <div className="space-y-24 w-full">
       
       {/* SECTION 16: LIVE DEMO CENTER */}
       <div className="space-y-10">

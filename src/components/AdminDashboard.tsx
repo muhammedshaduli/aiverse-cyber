@@ -8,6 +8,7 @@ import {
   Heart, MessageCircle, Users, ArrowLeft, Volume2, Lock, Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import ModuleSecurityGateway from "./ModuleSecurityGateway";
 
 interface AdminDashboardProps {
   onClose: () => void;

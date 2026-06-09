@@ -1,5 +1,5 @@
 import { useState, ComponentType } from "react";
-import { Eye, ShieldAlert, HeartHandshake, Bell, Key, Radio, Check, Globe, HelpCircle, Shield, ArrowUpRight } from "lucide-react";
+import { Eye, ShieldAlert, HeartHandshake, Bell, Key, Radio, Check, Globe, HelpCircle, Shield, ArrowUpRight, Brain, Layers } from "lucide-react";
 import { motion } from "motion/react";
 
 interface ModuleConfig {
@@ -90,6 +90,30 @@ export default function PlatformModules() {
       features: ["Election infrastructure armor", "State-sponsored actor tracker", "Classified threat packages", "Admissible evidence compiling"],
       kpi: "120+",
       kpiLabel: "Global Governments Protected"
+    },
+    {
+      id: "mindsync",
+      title: "AiVerse MindSync",
+      badge: "Cognitive Core",
+      tagline: "Cognitive Workspace Adaptation",
+      description: "Anticipates user workspaces, adapts response templates, and schedules custom focus/quiet-hour pacing loops based on local behavior data.",
+      icon: Brain,
+      themeColor: "from-pink-500 to-rose-600",
+      features: ["Ethical cognitive user modeling", "Local workspace pacing algorithms", "Intelligent offline quiet-hours", "Biometric-safe pattern mapping"],
+      kpi: "0.08s",
+      kpiLabel: "Average Cognitive Latency"
+    },
+    {
+      id: "aiverseone",
+      title: "AiVerse ONE",
+      badge: "Sentinel Gateway",
+      tagline: "Multi-Agent Control Gateway",
+      description: "Autonomous threat audit pipelines consisting of custom Verify, Watch, and Shield agent networks designed to orchestrate security live.",
+      icon: Layers,
+      themeColor: "from-cyan-500 to-blue-600",
+      features: ["Verify, Watch & Shield pipeline", "Visual multi-agent orchestrator", "Bespoke prompt sanitization gates", "Zurich air-gap deployment ready"],
+      kpi: "99.9%",
+      kpiLabel: "Defense Deflect Scale"
     }
   ];
 

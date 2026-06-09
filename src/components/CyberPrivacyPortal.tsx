@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import CTOBlueprintReport from "./CTOBlueprintReport";
+import ModuleSecurityGateway from "./ModuleSecurityGateway";
 
 // Structure for 22 modules detailed descriptions
 interface SecurityModule {
@@ -425,6 +426,7 @@ function generateSeedData(moduleId: number): any[] {
 
 export default function CyberPrivacyPortal({ onClose }: { onClose: () => void }) {
   const [isCTOReportOpen, setIsCTOReportOpen] = useState(false);
+
   // Onboard Session State
   const [sessionUser, setSessionUser] = useState<{ orgName: string; onPremLocation: string; scope: string } | null>(null);
   
@@ -815,7 +817,7 @@ export default function CyberPrivacyPortal({ onClose }: { onClose: () => void })
       </div>
 
       {/* Main Container */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col relative min-h-[700px]">
+      <div className="flex-1 w-full p-4 md:p-6 lg:p-8 flex flex-col relative min-h-[700px]">
 
         {/* Dynamic Onboard Wizard Overlay - 100% Light styled */}
         <AnimatePresence>

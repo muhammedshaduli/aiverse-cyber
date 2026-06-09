@@ -223,7 +223,7 @@ export default function TrustComplianceCenter() {
   const activeStandard = standards.find(s => s.id === selectedStandard) || standards[0];
 
   return (
-    <section id="trust-compliance" className="py-24 px-6 md:px-8 max-w-7xl mx-auto w-full scroll-mt-20">
+    <section id="trust-compliance" className="py-24 px-6 md:px-12 lg:px-20 xl:px-32 w-full scroll-mt-20">
       
       {/* Title Header with Glowing Aura */}
       <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
